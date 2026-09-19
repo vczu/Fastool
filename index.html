@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fastool</title>
+    <link rel="stylesheet" href="style.css">
+
+    <meta name="description" content="Free online tools by Fastool. HypeSquad badges, server cloning and Discord lookups, right from your browser." />
+    <meta name="keywords" content="discord, hypesquad, badge changer, server cloner, clone discord server, discord tools" />
+    <meta name="author" content="Natan" />
+    <meta name="referrer" content="no-referrer">
+    <meta name="robots" content="noindex, nofollow">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' https://cdn.discordapp.com https://*.discordapp.com data:; connect-src 'self' https://discord.com https://cdn.discordapp.com https://japi.rest; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests;">
+    <link rel="icon" type="image/png" href="images/favicon.png">
+</head>
+
+<body class="gate-locked">
+    <!-- Ikon Discord dipakai ulang via sprite -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+        <symbol id="i-discord" viewBox="0 0 24 24"><path d="M20.317 4.37a19.79 19.79 0 00-4.885-1.515.074.074 0 00-.079.037c-.21.375-.444.865-.608 1.25a18.27 18.27 0 00-5.487 0 12.64 12.64 0 00-.617-1.25.077.077 0 00-.079-.037A19.736 19.736 0 003.677 4.37a.07.07 0 00-.032.027C.533 9.046-.319 13.58.099 18.058a.082.082 0 00.031.056 19.9 19.9 0 005.993 3.03.078.078 0 00.084-.028c.462-.63.873-1.295 1.226-1.994a.076.076 0 00-.041-.106 13.107 13.107 0 01-1.872-.892.077.077 0 01-.008-.128c.126-.094.252-.192.372-.291a.074.074 0 01.077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 01.078.01c.12.099.246.198.373.292a.077.077 0 01-.006.127 12.3 12.3 0 01-1.873.892.077.077 0 00-.041.107c.36.698.772 1.363 1.225 1.993a.076.076 0 00.084.029 19.84 19.84 0 006.002-3.03.077.077 0 00.032-.055c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 00-.031-.029zM8.02 15.331c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></symbol>
+    </svg>
+    <div class="bg-glow" aria-hidden="true"></div>
+
+    <!-- FULLSCREEN LOGIN PACK GATE -->
+    <div id="loginGate" class="login-gate">
+        <div class="gate-card">
+            <img src="images/favicon.png" alt="Logo" class="gate-logo">
+            <h2>Login Pack</h2>
+            <p class="gate-desc">Enter your access key to open the tools.</p>
+            <div class="input-group" style="text-align:left">
+                <label for="accessKey">Access Key</label>
+                <input type="text" id="accessKey" placeholder="Enter your access key..." autocomplete="off" spellcheck="false">
+            </div>
+            <button id="unlockBtn" class="btn-primary full" type="button">Unlock</button>
+            <p class="need-key">You Need Key? Join <a id="discordLink" class="discord-link" href="https://discord.gg/HbbnwFrgTf" target="_blank" rel="noopener">Here</a></p>
+            <div id="keyStatus" class="status-message"></div>
+        </div>
+    </div>
+
+    <div id="site">
+        <!-- NAVBAR -->
+        <nav class="navbar">
+            <div class="nav-inner">
+                <a class="brand" href="#home" data-view="home">
+                    <img src="images/favicon.png" alt="Logo" class="brand-img">
+                    <span class="brand-text">Fastool</span>
+                </a>
+                <button class="hamburger" id="hamburger" type="button" aria-label="Toggle menu">
+                    <span></span><span></span><span></span>
+                </button>
+                <div class="nav-links" id="navbarLinks">
+                    <a href="#home" class="nav-link active" data-view="home">Home</a>
+                    <div class="nav-dropdown">
+                        <button class="nav-link nav-drop-btn" id="toolsDropBtn" type="button">
+                            <span>Tools</span>
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                        </button>
+                        <div class="nav-drop-menu" id="toolsDropMenu">
+                            <a href="#hypesquad" class="drop-item" data-view="hypesquad">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                                <span>HypeSquad Badge</span>
+                            </a>
+                            <a href="#cloner" class="drop-item" data-view="cloner">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                                <span>Copy Server</span>
+                            </a>
+                            <a href="#serverlookup" class="drop-item" data-view="serverlookup">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                                <span>Server Lookup</span>
+                            </a>
+                            <a href="#userlookup" class="drop-item" data-view="userlookup">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                <span>User Lookup</span>
+                            </a>
+                            <a href="#tokenchecker" class="drop-item" data-view="tokenchecker">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+                                <span>Token Checker</span>
+                            </a>
+                        </div>
+                    </div>
+                    <a href="#about" class="nav-link" data-view="about">About</a>
+                    <a href="#faq" class="nav-link" data-view="faq">FAQ</a>
+                    <a href="#support" class="nav-link" data-view="support">Support</a>
+                </div>
+                <a class="btn-discord discord-link" href="https://discord.gg/HbbnwFrgTf" target="_blank" rel="noopener">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><use href="#i-discord"/></svg>
+                    <span>Discord</span>
+                </a>
+            </div>
+        </nav>
+
+        <!-- ============ VIEW: HOME (hero + cloner default) ============ -->
+        <section class="page-view active" id="view-home">
+            <header class="hero" id="home">
+                <p class="hero-badge">Discord Utility</p>
+                <h1 class="logo">Fastool</h1>
+                <p class="subtitle">HypeSquad badges, server cloning and Discord lookups, right in your browser.</p>
+                <div class="hero-cta">
+                    <a href="#cloner" class="btn-primary">Start Cloning</a>
+                    <a href="https://discord.gg/HbbnwFrgTf" target="_blank" rel="noopener" class="btn-ghost discord-link">Get Key</a>
+                </div>
+                <p class="hero-stats"><strong><span id="statServers">0</span> servers cloned</strong><span class="dot">·</span><span>+100 daily users</span></p>
+            </header>
+
+            <main class="page">
+                <section class="tool-wrap" id="cloner">
+                    <article class="card form-card">
+                        <h2 class="card-title">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                            <span>Start Cloning</span>
+                        </h2>
+                        <div class="input-group">
+                            <label for="cloneToken">Discord Token</label>
+                            <div class="input-with-toggle">
+                                <input type="password" id="cloneToken" class="input-field" autocomplete="off" spellcheck="false" placeholder="Paste your Discord token...">
+                                <button type="button" class="toggle-visibility" id="toggleCloneToken" title="Show or hide token">
+                                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label for="sourceId">Source Server ID (copy from)</label>
+                            <input type="text" id="sourceId" class="input-field" inputmode="numeric" placeholder="e.g. 185647255028629505">
+                        </div>
+                        <div class="input-group">
+                            <label for="destId">Target Server ID (paste to)</label>
+                            <input type="text" id="destId" class="input-field" inputmode="numeric" placeholder="e.g. 1340068750191497276">
+                        </div>
+                        <label class="check-row">
+                            <input type="checkbox" id="cloneWipe" checked>
+                            <span>Delete existing roles / channels / emojis in target first</span>
+                        </label>
+                        <div id="cloneProgressWrap" class="progress-container" style="display:none">
+                            <div class="progress-bar-wrap"><div class="progress-bar-fill" id="cloneProgressFill"></div></div>
+                            <span class="progress-label" id="cloneProgressLabel">0%</span>
+                        </div>
+                        <button class="btn-primary full" id="startCloneBtn" type="button">Start Cloning</button>
+                        <button class="btn-ghost full" id="stopCloneBtn" type="button" style="display:none">Stop Process</button>
+                        <div class="log-container" id="cloneLogWrap" style="display:none">
+                            <div class="log-header">
+                                <h4>Operations Log</h4>
+                                <div class="log-actions">
+                                    <button class="log-btn" id="copyCloneLog" type="button" title="Copy log">
+                                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                                    </button>
+                                    <button class="log-btn" id="clearCloneLog" type="button" title="Clear log">
+                                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="cloneLogs"></div>
+                        </div>
+                        <p class="clone-note">Runs entirely in your browser. Your token never leaves your device. Enable Developer Mode in Discord to copy server IDs. Cloning with a user token is against Discord's ToS use an alternate account at your own risk.</p>
+                    </article>
+                    <article class="card tool-faq">
+                        <h2 class="card-title">Cloner FAQ</h2>
+                        <div class="faq-list">
+                            <div class="faq-item">
+                                <button class="faq-q" type="button">Why did cloning stop or fail?<span class="faq-plus">+</span></button>
+<div class="faq-a"><p>Usually an invalid token, wrong server IDs, missing permissions, or rate limits. The tool runs paced (writes ~1.5s apart), retries rate limits with extra buffer, and auto-stops after 5 in a row to protect the account. Check the operations log for details.</p></div>
+                            </div>
+                            <div class="faq-item">
+                                <button class="faq-q" type="button">Are messages copied too?<span class="faq-plus">+</span></button>
+                                <div class="faq-a"><p>No. Message history cannot be cloned. Only structure is copied roles, categories, channels, permissions, emojis, name and icon.</p></div>
+                            </div>
+                            <div class="faq-item">
+                                <button class="faq-q" type="button">Is cloning against Discord's rules?<span class="faq-plus">+</span></button>
+                                <div class="faq-a"><p>Cloning with a user token violates Discord's ToS and can get the account banned. Use an alternate account at your own risk.</p></div>
+                            </div>
+                        </div>
+                    </article>
+                </section>
+            </main>
+
+            <section class="panel">
+                <p class="panel-kicker">What you get</p>
+                <div class="panel-grid">
+                    <div class="panel-item">
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+                        <div><h3>Copy Roles</h3><p>Colors and permissions.</p></div>
+                    </div>
+                    <div class="panel-item">
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                        <div><h3>Copy Channels</h3><p>Categories and overwrites.</p></div>
+                    </div>
+                    <div class="panel-item">
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+                        <div><h3>Copy Emojis</h3><p>Straight transfer.</p></div>
+                    </div>
+                    <div class="panel-item">
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                        <div><h3>Badges</h3><p>One-click equip.</p></div>
+                    </div>
+                </div>
+            </section>
+        </section>
+
+        <!-- ============ VIEW: HYPESQUAD ============ -->
+        <section class="page-view" id="view-hypesquad">
+            <main class="page">
+                <section class="tool-wrap">
+                    <article class="card" id="badgeTool">
+                        <div class="step-label">
+                            <span class="step-num">Badge</span>
+                            <span>HypeSquad Manager</span>
+                        </div>
+                        <div class="tool-body" id="mainApp">
+                            <div id="loginSection" class="token-section">
+                                <div id="webTokenContainer">
+                                    <div class="token-header">
+                                        <label for="token">Discord Token</label>
+                                    </div>
+                                    <div class="input-wrapper">
+                                        <input type="password" id="token" placeholder="Paste your Discord token..." autocomplete="off">
+                                        <button id="toggleToken" class="toggle-btn" title="Show/Hide Token" type="button">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                        </button>
+                                    </div>
+                                    <div class="security-note">
+                                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                                        <span>Your token is never stored externally. It only talks to Discord's official API.</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="profileSection" class="profile-section hidden">
+                                <div class="profile-card">
+                                    <div class="avatar-ring"><img id="userAvatar" src="" alt="Avatar" class="profile-avatar"></div>
+                                    <div class="profile-info">
+                                        <span class="profile-label">Authenticated as</span>
+                                        <h3 id="username">User</h3>
+                                    </div>
+                                    <button id="logoutBtn" class="logout-btn" title="Logout" type="button">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="badge-selection">
+                                <h3>Select Badge</h3>
+                                <div class="badge-options">
+                                    <div class="badge-option bravery-card" data-house="2">
+                                        <div class="badge-icon"><img src="images/hypesquadbravery.svg" alt="Bravery"></div>
+                                        <span class="badge-name">Bravery</span>
+                                        <span class="badge-desc">Daring and bold</span>
+                                    </div>
+                                    <div class="badge-option brilliance-card" data-house="3">
+                                        <div class="badge-icon"><img src="images/hypesquadbrilliance.svg" alt="Brilliance"></div>
+                                        <span class="badge-name">Brilliance</span>
+                                        <span class="badge-desc">Smart and curious</span>
+                                    </div>
+                                    <div class="badge-option balance-card" data-house="1">
+                                        <div class="badge-icon"><img src="images/hypesquadbalance.svg" alt="Balance"></div>
+                                        <span class="badge-name">Balance</span>
+                                        <span class="badge-desc">Calm and steady</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="action-buttons">
+                                <button id="setBadge" class="btn-primary full" disabled type="button">Equip Badge</button>
+                                <button id="removeBadge" class="btn-ghost full" type="button">Hide Badge</button>
+                            </div>
+                            <div class="status-section">
+                                <div id="status" class="status-message"></div>
+                                <div id="loading" class="loading hidden"><div class="spinner"></div><span>Syncing with Discord...</span></div>
+                            </div>
+                        </div>
+                    </article>
+                    <article class="card tool-faq">
+                        <h2 class="card-title">Badge FAQ</h2>
+                        <div class="faq-list">
+                            <div class="faq-item">
+                                <button class="faq-q" type="button">My badge is not showing?<span class="faq-plus">+</span></button>
+                                <div class="faq-a"><p>Try switching houses once more, then fully restart the Discord app. Badges can take a minute to appear.</p></div>
+                            </div>
+                            <div class="faq-item">
+                                <button class="faq-q" type="button">Equip Badge vs Hide Badge?<span class="faq-plus">+</span></button>
+                                <div class="faq-a"><p>Equip switches you to the selected house. Hide removes your HypeSquad badge (Discord may reject removal, switching houses always works).</p></div>
+                            </div>
+                            <div class="faq-item">
+                                <button class="faq-q" type="button">Is my token stored anywhere?<span class="faq-plus">+</span></button>
+                                <div class="faq-a"><p>No. It lives in your browser session only, is sent exclusively to Discord's official API, and is wiped when you log out.</p></div>
+                            </div>
+                        </div>
+                    </article>
+                </section>
+            </main>
+        </section>
+
+        <!-- ============ VIEW: SERVER LOOKUP ============ -->
+        <section class="page-view" id="view-serverlookup">
+            <main class="page">
+                <section class="tool-wrap">
+                    <article class="card form-card">
+                        <h2 class="card-title">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                            <span>Server Lookup</span>
+                        </h2>
+                        <p class="card-desc">Paste any Discord invite link or code. No token needed.</p>
+                        <div class="input-group">
+                            <label for="inviteInput">Invite Link or Code</label>
+                            <input type="text" id="inviteInput" class="input-field" placeholder="discord.gg/example or just the code" autocomplete="off" spellcheck="false">
+                        </div>
+                        <button class="btn-primary full" id="serverLookupBtn" type="button">Lookup</button>
+                        <div id="serverLookupLoading" class="loading hidden" style="margin-top:12px"><div class="spinner"></div><span>Looking up server...</span></div>
+                        <div id="serverLookupError" class="status-message error" style="margin-top:12px"></div>
+                        <div id="serverLookupResult" class="lookup-result" style="display:none">
+                            <img id="lkBanner" class="lookup-banner" alt="Server banner" style="display:none">
+                            <div class="lookup-header">
+                                <img id="lkIcon" class="lookup-icon" alt="Server icon">
+                                <div>
+                                    <h3 id="lkName" class="lookup-name"></h3>
+                                    <p id="lkDesc" class="lookup-desc"></p>
+                                </div>
+                            </div>
+                            <div class="download-buttons" id="lkDownloads"></div>
+                            <div class="lookup-stats-grid">
+                                <div class="lookup-stat"><span class="lookup-stat-num" id="lkMembers">-</span><span class="lookup-stat-label">Total Members</span></div>
+                                <div class="lookup-stat"><span class="lookup-stat-num" id="lkOnline">-</span><span class="lookup-stat-label">Online Now</span></div>
+                                <div class="lookup-stat"><span class="lookup-stat-num" id="lkVerify">-</span><span class="lookup-stat-label">Verification</span></div>
+                                <div class="lookup-stat"><span class="lookup-stat-num" id="lkBoost">-</span><span class="lookup-stat-label">Boost Level</span></div>
+                            </div>
+                            <div class="lookup-details" id="lkDetails"></div>
+                        </div>
+                    </article>
+                    <article class="card tool-faq">
+                        <h2 class="card-title">Lookup FAQ</h2>
+                        <div class="faq-list">
+                            <div class="faq-item">
+                                <button class="faq-q" type="button">Do I need a token?<span class="faq-plus">+</span></button>
+                                <div class="faq-a"><p>No. Server Lookup uses Discord's public invite API, just paste any invite link or code.</p></div>
+                            </div>
+                            <div class="faq-item">
+                                <button class="faq-q" type="button">The invite lookup doesn't work?<span class="faq-plus">+</span></button>
+                                <div class="faq-a"><p>Make sure the invite is valid and not expired. You can paste the full URL or just the code.</p></div>
+                            </div>
+                            <div class="faq-item">
+                                <button class="faq-q" type="button">What data is shown?<span class="faq-plus">+</span></button>
+                                <div class="faq-a"><p>Icon, banner, splash, name, description, member counts, verification and boost level. Everything public.</p></div>
+                            </div>
+                        </div>
+                    </article>
+                </section>
+            </main>
+        </section>
+
+        <!-- ============ VIEW: USER LOOKUP ============ -->
+        <section class="page-view" id="view-userlookup">
+            <main class="page">
+                <section class="tool-wrap">
+                    <article class="card form-card">
+                        <h2 class="card-title">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                            <span>User Lookup</span>
+                        </h2>
+                        <p class="card-desc">Paste any Discord User ID, no token needed. Avatar, banner, badges and dates included.</p>
+                        <div class="input-group">
+                            <label for="lookupUserId">User ID</label>
+                            <input type="text" id="lookupUserId" class="input-field" inputmode="numeric" placeholder="e.g. 80351110224678912" autocomplete="off" spellcheck="false">
+                        </div>
+                        <button class="btn-primary full" id="userLookupBtn" type="button">Lookup</button>
+                        <div id="userLookupLoading" class="loading hidden" style="margin-top:12px"><div class="spinner"></div><span>Looking up user...</span></div>
+                        <div id="userLookupError" class="status-message error" style="margin-top:12px"></div>
+                        <div id="userLookupResult" class="lookup-result" style="display:none">
+                            <div class="lookup-header">
+                                <img id="luAvatar" class="lookup-icon" alt="User avatar">
+                                <div>
+                                    <h3 id="luName" class="lookup-name"></h3>
+                                    <p id="luSub" class="lookup-desc"></p>
+                                </div>
+                            </div>
+                            <div class="download-buttons" id="luDownloads"></div>
+                            <div class="lookup-details" id="luDetails"></div>
+                        </div>
+                    </article>
+                    <article class="card tool-faq">
+                        <h2 class="card-title">Lookup FAQ</h2>
+                        <div class="faq-list">
+                            <div class="faq-item">
+                                <button class="faq-q" type="button">What does a User ID reveal?<span class="faq-plus">+</span></button>
+                                <div class="faq-a"><p>Avatar, banner, username, badges and the account creation date. No token needed. Just paste any ID.</p></div>
+                            </div>
+                            <div class="faq-item">
+                                <button class="faq-q" type="button">Download is not working?<span class="faq-plus">+</span></button>
+                                <div class="faq-a"><p>The file opens in a new tab instead. Long press or right-click it there to save. Animated banners need the user to actually have one.</p></div>
+                            </div>
+                            <div class="faq-item">
+                                <button class="faq-q" type="button">Is the data real time?<span class="faq-plus">+</span></button>
+                                <div class="faq-a"><p>Data is cached for about an hour, so very recent avatar or name changes may lag behind.</p></div>
+                            </div>
+                        </div>
+                    </article>
+                </section>
+            </main>
+        </section>
+
+        <!-- ============ VIEW: TOKEN CHECKER ============ -->
+        <section class="page-view" id="view-tokenchecker">
+            <main class="page">
+                <section class="tool-wrap">
+                    <article class="card form-card">
+                        <h2 class="card-title">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+                            <span>Token Checker</span>
+                        </h2>
+                        <p class="card-desc">Check if a token is valid. It is only sent to Discord, never stored. Never share your token.</p>
+                        <div class="input-group">
+                            <label for="checkToken">Discord Token</label>
+                            <input type="password" id="checkToken" class="input-field" placeholder="Paste token to validate..." autocomplete="off">
+                        </div>
+                        <button class="btn-primary full" id="tokenCheckBtn" type="button">Check Token</button>
+                        <div id="tokenCheckLoading" class="loading hidden" style="margin-top:12px"><div class="spinner"></div><span>Checking token...</span></div>
+                        <div id="tokenCheckError" class="status-message error" style="margin-top:12px"></div>
+                        <div id="tokenCheckResult" class="lookup-result" style="display:none">
+                            <div class="lookup-header">
+                                <img id="tcAvatar" class="lookup-icon" alt="Avatar">
+                                <div>
+                                    <h3 id="tcName" class="lookup-name"></h3>
+                                    <p id="tcSub" class="lookup-desc"></p>
+                                </div>
+                            </div>
+                            <div class="lookup-details" id="tcDetails"></div>
+                        </div>
+                    </article>
+                    <article class="card tool-faq">
+                        <h2 class="card-title">Checker FAQ</h2>
+                        <div class="faq-list">
+                            <div class="faq-item">
+                                <button class="faq-q" type="button">Is my token stored?<span class="faq-plus">+</span></button>
+                                <div class="faq-a"><p>Never. It is sent only to Discord for the check and lives in memory until you reload or leave.</p></div>
+                            </div>
+                            <div class="faq-item">
+                                <button class="faq-q" type="button">What does "Invalid token" mean?<span class="faq-plus">+</span></button>
+                                <div class="faq-a"><p>The token is expired, revoked (password changed), or pasted incompletely. Grab a fresh one.</p></div>
+                            </div>
+                            <div class="faq-item">
+                                <button class="faq-q" type="button">Is checking a token risky?<span class="faq-plus">+</span></button>
+                                <div class="faq-a"><p>Checking only reads basic profile info. Still, never paste your token on devices you don't trust. Anyone holding it controls the account.</p></div>
+                            </div>
+                        </div>
+                    </article>
+                </section>
+            </main>
+        </section>
+
+        <!-- ============ VIEW: ABOUT ============ -->
+        <section class="page-view" id="view-about">
+            <main class="page">
+                <article class="card page-card">
+                <p class="section-kicker">About</p>
+                <h2 class="section-title">Free Discord tools in your browser</h2>
+                <p class="section-desc">Fastool bundles five tools behind one access key. Everything runs client side your token is only ever sent to Discord's official API, never to our servers.</p>
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <span class="feature-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
+                        <h3>HypeSquad Badge</h3>
+                        <p>Switch between Bravery, Brilliance and Balance instantly, or hide your badge.</p>
+                    </div>
+                    <div class="feature-card">
+                        <span class="feature-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></span>
+                        <h3>Copy Server</h3>
+                        <p>Replicate roles, categories, channels, permissions, emojis, name and icon from one server to another.</p>
+                    </div>
+                    <div class="feature-card">
+                        <span class="feature-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg></span>
+                        <h3>Private by design</h3>
+                        <p>No installs, no storage, no middlemen. Keys are distributed via our Discord server only.</p>
+                    </div>
+                </div>
+                </article>
+            </main>
+        </section>
+
+        <!-- ============ VIEW: FAQ ============ -->
+        <section class="page-view" id="view-faq">
+            <main class="page">
+                <article class="card page-card">
+                <p class="section-kicker">FAQ</p>
+                <h2 class="section-title">Frequently asked questions</h2>
+                <div class="faq-list">
+                    <div class="faq-item">
+                        <button class="faq-q" type="button">Where do I get an access key?<span class="faq-plus">+</span></button>
+                        <div class="faq-a"><p>Join our Discord server and claim a key from the key channel or an admin. Permanent keys never expire weekly keys last 7 days from first use.</p></div>
+                    </div>
+                    <div class="faq-item">
+                        <button class="faq-q" type="button">How do I get my Discord token?<span class="faq-plus">+</span></button>
+                        <div class="faq-a"><p>Open Discord in your browser, press Ctrl+Shift+I, go to Application tab, then Local Storage, find https://discord.com, and look for the token key. Never share it with anyone.</p></div>
+                    </div>
+                    <div class="faq-item">
+                        <button class="faq-q" type="button">Is this safe to use?<span class="faq-plus">+</span></button>
+                        <div class="faq-a"><p>The tools run entirely in your browser. Your token only talks to Discord's API. Note cloning with a user token is against Discord's ToS, so use an alternate account at your own risk.</p></div>
+                    </div>
+                    <div class="faq-item">
+                        <button class="faq-q" type="button">Does cloning copy messages?<span class="faq-plus">+</span></button>
+                        <div class="faq-a"><p>No. Message history cannot be cloned. The tool copies structure roles, categories, channels, permissions, emojis, name and icon.</p></div>
+                    </div>
+                    <div class="faq-item">
+                        <button class="faq-q" type="button">Do lookups need my token?<span class="faq-plus">+</span></button>
+                        <div class="faq-a"><p>Server Lookup needs nothing. It uses Discord's public invite API. User Lookup needs only the User ID (avatar, banner and badges included, no token). Token Checker only validates and never stores.</p></div>
+                    </div>
+                    <div class="faq-item">
+                        <button class="faq-q" type="button">The invite lookup doesn't work?<span class="faq-plus">+</span></button>
+                        <div class="faq-a"><p>Make sure the invite is valid and not expired. You can paste the full URL or just the code.</p></div>
+                    </div>
+                    <div class="faq-item">
+                        <button class="faq-q" type="button">Why did cloning stop or fail?<span class="faq-plus">+</span></button>
+                        <div class="faq-a"><p>Usually an invalid token, wrong server IDs, missing permissions, or rate limits. The tool retries rate limits automatically, check the operations log for details.</p></div>
+                    </div>
+                </div>
+                </article>
+            </main>
+        </section>
+
+        <!-- ============ VIEW: SUPPORT ============ -->
+        <section class="page-view" id="view-support">
+            <main class="page">
+                <article class="card page-card">
+                <p class="section-kicker">Support</p>
+                <h2 class="section-title">Need help?</h2>
+                <p class="section-desc">Expired key, failed clone, or a bug, reach us on Discord and include what the operations log says.</p>
+                <div class="hero-cta" style="justify-content:flex-start">
+                    <a class="btn-discord discord-link" href="https://discord.gg/HbbnwFrgTf" target="_blank" rel="noopener">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><use href="#i-discord"/></svg>
+                        <span>Join Support Server</span>
+                    </a>
+                </div>
+                </article>
+            </main>
+        </section>
+
+        <footer class="footer">
+            <div class="footer-inner">
+                <div class="footer-brand">
+                    <img src="images/favicon.png" alt="Logo">
+                    <span>Fastool</span>
+                </div>
+                <p class="footer-text">HypeSquad badges, server cloning and lookups. Keys are distributed via Discord only. Server cloner concept credit : spunKfps.</p>
+                <div class="footer-links">
+                    <a class="discord-link" href="https://discord.gg/HbbnwFrgTf" target="_blank" rel="noopener">Discord Server</a>
+                    <span class="footer-sep"></span>
+                    <a href="#home" data-view="home">Home</a>
+                    <span class="footer-sep"></span>
+                    <span>© <span id="year">2026</span></span>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script src="keys.js?v=2"></script>
+    <script src="cloner.js"></script>
+    <script src="lookup.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>
