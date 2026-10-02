@@ -10,6 +10,6 @@
 const SUPPORT_DISCORD_URL = "https://discord.gg/HbbnwFrgTf";
 
 const ACCESS_KEYS = [
-  { key: "FASTOOL", type: "permanent" },
+  { key: "NATAN", type: "permanent" },
   { key: "NTM-TRIAL-FASTOOL", type: "weekly" },
 ];
