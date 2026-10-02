@@ -11,13 +11,15 @@ class ServerCloner {
         this.running = false;
         this.done = 0;
         this.total = 1;
-        // Medium-safe pacing: writes are slow, reads are gentler.
-        // Jitter keeps the rhythm from looking robotic.
-        this.WRITE_DELAY = 1500;
+        // Pacing per route, matching Discord's real limits.
+        // Channel create/delete is the tightest bucket on Discord,
+        // so it gets the longest gap. Reads stay gentle.
         this.READ_DELAY = 500;
-        this.LIMIT_BUFFER = 1500;
+        this.ROUTE_DELAY = { guild: 2500, role: 2500, channel: 3000, emoji: 2000, other: 2500 };
+        this.LIMIT_BUFFER = 2000;
         this.MAX_STRIKES = 5;
-        this.rateStrikes = 0;
+        this.strikes = {};
+        this.backoff = {};
         this.el = {};
         ['cloneToken', 'toggleCloneToken', 'sourceId', 'destId', 'cloneWipe',
          'startCloneBtn', 'stopCloneBtn', 'cloneProgressWrap', 'cloneProgressFill',
@@ -64,23 +66,52 @@ class ServerCloner {
         this.done++;
         const pct = Math.min(100, Math.round((this.done / Math.max(1, this.total)) * 100));
         if (this.el.cloneProgressFill) this.el.cloneProgressFill.style.width = pct + '%';
-        if (this.el.cloneProgressLabel) this.el.cloneProgressLabel.textContent = phase ? (phase + ' ' + pct + '%') : (pct + '%');
+        if (this.el.cloneProgressLabel) {
+            let label = phase ? (phase + ' ' + pct + '%') : (pct + '%');
+            const eta = this.etaText();
+            if (eta) label += ' - ' + eta;
+            this.el.cloneProgressLabel.textContent = label;
+        }
+    }
+
+    // Rough ETA from measured average time per completed step.
+    etaText() {
+        if (!this.startedAt || this.done < 3) return '';
+        const remaining = Math.max(0, this.total - this.done);
+        if (remaining <= 0) return '';
+        const perStep = (Date.now() - this.startedAt) / this.done;
+        const secs = Math.round(perStep * remaining);
+        if (secs < 60) return 'about ' + secs + 's left';
+        return 'about ' + Math.ceil(secs / 60) + 'm left';
     }
 
     sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-    // Paced sleep with jitter so request rhythm looks human.
-    async pace(baseMs) {
-        const jitter = baseMs * (0.75 + Math.random() * 0.5);
-        const steps = Math.max(1, Math.round(jitter / 250));
-        for (let i = 0; i < steps; i++) {
-            if (this.stopFlag) throw new Error('STOPPED');
-            await this.sleep(Math.min(250, jitter - i * 250));
-        }
+    // Group a request path into a rate-limit bucket so pacing and strikes
+    // are tracked per Discord bucket instead of one global counter.
+    routeKey(method, path) {
+        if (path.includes('/roles')) return 'role';
+        if (path.includes('/channels') || path.startsWith('/channels/')) return 'channel';
+        if (path.includes('/emojis')) return 'emoji';
+        if (method === 'PATCH' && /^\/guilds\/\d+$/.test(path)) return 'guild';
+        return 'other';
     }
 
-    paceRead() { return this.pace(this.READ_DELAY); }
-    paceWrite() { return this.pace(this.WRITE_DELAY); }
+    delayFor(route) {
+        const base = route === 'read' ? this.READ_DELAY : (this.ROUTE_DELAY[route] || this.ROUTE_DELAY.other);
+        return base * (this.backoff[route] || 1);
+    }
+
+    // Paced sleep. Jitter only ever ADDS time, never subtracts, so the
+    // gap can never fall below the route's safe minimum.
+    async pace(route) {
+        const wait = this.delayFor(route) * (1 + Math.random() * 0.3);
+        if (this.stopFlag) throw new Error('STOPPED');
+        await this.sleep(wait);
+    }
+
+    paceRead() { return this.pace('read'); }
+    paceWrite(route) { return this.pace(route || 'other'); }
 
     async api(token, method, path, body, retries = 5) {
         for (let attempt = 0; attempt <= retries; attempt++) {
@@ -101,14 +132,35 @@ class ServerCloner {
                 continue;
             }
             if (res.status === 429) {
+                const rk = this.routeKey(method, path);
+                // Discord's own headers are the most accurate source; the
+                // JSON body's retry_after is only a fallback.
                 let wait = 2000;
-                try { const d = await res.json(); if (d.retry_after) wait = Math.ceil(d.retry_after * 1000); } catch (e) {}
+                const hdrRetry = parseFloat(res.headers.get('retry-after'));
+                const hdrReset = parseFloat(res.headers.get('x-ratelimit-reset-after'));
+                if (!Number.isNaN(hdrRetry)) wait = hdrRetry * 1000;
+                else if (!Number.isNaN(hdrReset)) wait = hdrReset * 1000;
+                let isGlobal = false;
+                try {
+                    const d = await res.json();
+                    if (d.retry_after) wait = Math.max(wait, Math.ceil(d.retry_after * 1000));
+                    if (d.global) isGlobal = true;
+                } catch (e) {}
                 wait += this.LIMIT_BUFFER;
-                this.rateStrikes++;
-                if (this.rateStrikes >= this.MAX_STRIKES) {
-                    throw new Error(`Rate limited ${this.MAX_STRIKES}x in a row. Stopped to protect the account. Wait a while before retrying.`);
+
+                // Adaptive backoff: this route slows itself down on repeat hits.
+                this.backoff[rk] = Math.min(4, (this.backoff[rk] || 1) * 1.6);
+
+                if (isGlobal) {
+                    this.strikes = {};
+                    this.log(`Discord global rate limit. Cooling down ${Math.ceil(wait / 1000)}s before retrying.`, 'warn');
+                } else {
+                    this.strikes[rk] = (this.strikes[rk] || 0) + 1;
+                    if (this.strikes[rk] >= this.MAX_STRIKES) {
+                        throw new Error(`Rate limited ${this.MAX_STRIKES}x on ${rk} writes in a row. Stopped to protect the account. Wait a few minutes before retrying.`);
+                    }
+                    this.log(`Rate limited on ${rk} (${this.strikes[rk]}/${this.MAX_STRIKES}), slowing to ${(this.delayFor(rk) / 1000).toFixed(1)}s and waiting ${Math.ceil(wait / 1000)}s...`, 'warn');
                 }
-                this.log(`Rate limited (${this.rateStrikes}/${this.MAX_STRIKES}), waiting ${Math.ceil(wait / 1000)}s...`, 'warn');
                 await this.sleep(wait);
                 continue;
             }
@@ -123,7 +175,13 @@ class ServerCloner {
                 try { const d = await res.json(); m = d.message || JSON.stringify(d); } catch (e) {}
                 throw new Error('Discord API ' + res.status + ': ' + m);
             }
-            this.rateStrikes = 0;
+            // Success: decay this route's strike count and backoff so the
+            // cloner speeds back up once Discord stops pushing back.
+            const okRoute = this.routeKey(method, path);
+            if (this.strikes[okRoute]) this.strikes[okRoute]--;
+            if (this.backoff[okRoute] && this.backoff[okRoute] > 1) {
+                this.backoff[okRoute] = Math.max(1, this.backoff[okRoute] / 1.3);
+            }
             if (res.status === 204) return null;
             try { return await res.json(); } catch (e) { return null; }
         }
@@ -181,7 +239,9 @@ class ServerCloner {
         if (src === dst) return this.log('Source and target must be different servers.', 'err');
 
         this.stopFlag = false;
-        this.rateStrikes = 0;
+        this.strikes = {};
+        this.backoff = {};
+        this.startedAt = Date.now();
         this.done = 0;
         this.setRunning(true);
         if (this.el.cloneLogs) this.el.cloneLogs.innerHTML = '';
@@ -211,6 +271,9 @@ class ServerCloner {
             const cats = srcChannels.filter(c => c.type === 4).sort((a, b) => a.position - b.position);
             const chans = srcChannels.filter(c => c.type !== 4).sort((a, b) => a.position - b.position);
             this.total = 2 + srcRoles.length + srcChannels.length + (srcEmojis || []).length;
+            // Start the ETA clock only once writes begin, so the per-step
+            // average reflects real write throughput instead of the read phase.
+            this.startedAt = Date.now();
 
             // 1) Wipe target (sequential with pauses, never bursty)
             if (this.el.cloneWipe?.checked) {
@@ -225,18 +288,18 @@ class ServerCloner {
                     if (r.managed || r.name === '@everyone') continue;
                     try { await this.api(token, 'DELETE', '/guilds/' + dst + '/roles/' + r.id); this.log('Deleted role: ' + r.name); }
                     catch (e) { this.log('Skip role ' + r.name + ': ' + e.message, 'warn'); }
-                    await this.paceWrite();
+                    await this.paceWrite('role');
                 }
                 for (const c of dstChannels) {
                     if (this.stopFlag) throw new Error('STOPPED');
                     try { await this.api(token, 'DELETE', '/channels/' + c.id); this.log('Deleted channel: ' + c.name); }
                     catch (e) { this.log('Skip channel ' + c.name + ': ' + e.message, 'warn'); }
-                    await this.paceWrite();
+                    await this.paceWrite('channel');
                 }
                 for (const e of (dstEmojis || [])) {
                     if (this.stopFlag) throw new Error('STOPPED');
                     try { await this.api(token, 'DELETE', '/guilds/' + dst + '/emojis/' + e.id); } catch (err) {}
-                    await this.paceWrite();
+                    await this.paceWrite('emoji');
                 }
             }
             this.tick('Cleaning');
@@ -244,14 +307,14 @@ class ServerCloner {
             // 2) Server name + icon
             try {
                 await this.api(token, 'PATCH', '/guilds/' + dst, { name: srcGuild.name });
-                await this.paceWrite();
+                await this.paceWrite('guild');
                 this.log('Copied server name: ' + srcGuild.name, 'ok');
             } catch (e) { this.log('Skip name: ' + e.message, 'warn'); }
             if (srcGuild.icon) {
                 try {
                     const data = await this.fetchImageDataURL('https://cdn.discordapp.com/icons/' + src + '/' + srcGuild.icon + '.png?size=256');
                     await this.api(token, 'PATCH', '/guilds/' + dst, { icon: data });
-                    await this.paceWrite();
+                    await this.paceWrite('guild');
                     this.log('Copied server icon.', 'ok');
                 } catch (e) { this.log('Skip icon: ' + e.message, 'warn'); }
             }
@@ -272,7 +335,7 @@ class ServerCloner {
                     roleMap.set(String(r.id), String(created.id));
                     this.log('Cloned role: ' + r.name, 'ok');
                 } catch (e) { this.log('Role failed ' + r.name + ': ' + e.message, 'err'); }
-                await this.paceWrite();
+                await this.paceWrite('role');
                 this.tick('Roles');
             }
 
@@ -288,7 +351,7 @@ class ServerCloner {
                     catMap.set(String(c.id), String(created.id));
                     this.log('Cloned category: ' + c.name, 'ok');
                 } catch (e) { this.log('Category failed ' + c.name + ': ' + e.message, 'err'); }
-                await this.paceWrite();
+                await this.paceWrite('channel');
                 this.tick('Categories');
             }
             for (const c of chans) {
@@ -308,7 +371,7 @@ class ServerCloner {
                     await this.api(token, 'POST', '/guilds/' + dst + '/channels', payload);
                     this.log('Cloned channel: ' + c.name, 'ok');
                 } catch (e) { this.log('Channel failed ' + c.name + ': ' + e.message, 'err'); }
-                await this.paceWrite();
+                await this.paceWrite('channel');
                 this.tick('Channels');
             }
 
@@ -321,28 +384,9 @@ class ServerCloner {
                     await this.api(token, 'POST', '/guilds/' + dst + '/emojis', { name: e.name, image: data });
                     this.log('Cloned emoji: ' + e.name, 'ok');
                 } catch (err) { this.log('Emoji failed ' + e.name + ': ' + err.message, 'err'); }
-                await this.paceWrite();
+                await this.paceWrite('emoji');
                 this.tick('Emojis');
             }
 
             if (this.el.cloneProgressFill) this.el.cloneProgressFill.style.width = '100%';
-            if (this.el.cloneProgressLabel) this.el.cloneProgressLabel.textContent = '100%';
-            this.log('Cloning completed successfully.', 'ok');
-            try {
-                const n = parseInt(localStorage.getItem('dbm_cloned_count') || '0', 10) + 1;
-                localStorage.setItem('dbm_cloned_count', String(n));
-                const statEl = document.getElementById('statServers');
-                if (statEl) statEl.textContent = String(n);
-            } catch (e) {}
-        } catch (e) {
-            if (e.message === 'STOPPED') this.log('Process stopped by user.', 'warn');
-            else this.log('Error: ' + e.message, 'err');
-        } finally {
-            this.setRunning(false);
-        }
-    }
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    try { new ServerCloner(); } catch (e) { console.error('Cloner init failed:', e); }
-});
+            if (this.el.cloneProgressLabel) thi
