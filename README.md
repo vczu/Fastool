@@ -1,4 +1,4 @@
-# FASTOOL !
+# FASTOOL
 
 Free Discord tools — badges, cloning, lookups.
 
