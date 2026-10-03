@@ -40,4 +40,4 @@ npx serve .
 
 ## License
 
-MIT
+MIT — NATAN
